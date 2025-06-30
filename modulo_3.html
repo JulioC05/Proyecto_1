@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Calculadora de Carga Eléctrica</title>
+</head>
+<body>
+  <h2>Corriente: I(t) = at² + bt + c</h2>
+  <label>a: <input type="number" id="a" value="2"></label><br>
+  <label>b: <input type="number" id="b" value="-3"></label><br>
+  <label>c: <input type="number" id="c" value="7"></label><br><br>
+
+  <label>Tiempo inicial (s): <input type="number" id="t1" value="2"></label><br>
+  <label>Tiempo final (s): <input type="number" id="t2" value="4"></label><br><br>
+
+  <button onclick="calcularCarga()">Calcular carga (Q)</button>
+
+  <h3 id="resultado"></h3>
+
+  <script>
+    function calcularCarga() {
+      const a = parseFloat(document.getElementById("a").value);
+      const b = parseFloat(document.getElementById("b").value);
+      const c = parseFloat(document.getElementById("c").value);
+      const t1 = parseFloat(document.getElementById("t1").value);
+      const t2 = parseFloat(document.getElementById("t2").value);
+
+      const integral = (t) => (a * t**3) / 3 + (b * t**2) / 2 + c * t;
+      const Q = integral(t2) - integral(t1);
+
+      document.getElementById("resultado").innerText = `Carga total: Q = ${Q.toFixed(2)} C`;
+    }
+  </script>
+</body>
+</html>

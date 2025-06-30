@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calculadora Ley de Ohm y Joule con Gráficos</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        color: #333;
+      }
+      .container {
+        background-color: #fff;
+        padding: 25px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        max-width: 900px;
+        margin: 20px auto;
+        display: flex;
+        flex-direction: column;
+        height: 95vh; /* Ocupa toda la pantalla */
+        overflow: hidden;
+      }
+      h1,
+      h2 {
+        color: #0056b3;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .input-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 20px;
+        align-items: center;
+      }
+      .input-item {
+        flex: 1 1 calc(33% - 30px); /* Ajusta el ancho para 3 columnas, restando el gap */
+        min-width: 200px; /* Ancho mínimo para cada item */
+        display: flex;
+        flex-direction: column;
+      }
+      .input-item label {
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      .input-item select,
+      .input-item input {
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 1em;
+        width: 100%;
+        box-sizing: border-box; /* Asegura que padding y border no aumenten el ancho */
+      }
+      .input-item .unit-select {
+        width: auto; /* Permitir que el select de unidad se ajuste a su contenido */
+        flex-grow: 0;
+        margin-left: 5px;
+      }
+      .input-item div {
+        /* Contenedor para el input de valor y el select de unidad */
+        display: flex;
+        align-items: center;
+      }
+      button {
+        display: block;
+        width: 100%;
+        padding: 12px 20px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 1.1em;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        margin-top: 20px;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      #chartContainer {
+        margin-top: 20px;
+        flex-grow: 1;
+        overflow: hidden;
+        background-color: #fcfcfc;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #eee;
+        display: flex;
+        flex-direction: column;
+      }
+      #error-message {
+        color: red;
+        margin-top: 10px;
+        text-align: center;
+      }
+      #myChart {
+        width: 100% !important;
+        height: 100% !important;
+      }
+      @media (max-width: 768px) {
+        .input-item {
+          flex: 1 1 100%; /* Una columna en pantallas pequeñas */
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Calculadora de Ley de Ohm y Joule con Gráficos</h1>
+
+      <div class="input-group">
+        <div class="input-item">
+          <label for="xAxis">Eje X (Variable Independiente):</label>
+          <select id="xAxis">
+            <option value="V">Voltaje (V)</option>
+            <option value="I">Intensidad (I)</option>
+            <option value="R">Resistencia (R)</option>
+            <option value="P">Potencia (P)</option>
+            <option value="t">Tiempo (t)</option>
+          </select>
+        </div>
+        <div class="input-item">
+          <label for="yAxis">Eje Y (Variable Dependiente):</label>
+          <select id="yAxis">
+            <option value="I">Intensidad (I)</option>
+            <option value="V">Voltaje (V)</option>
+            <option value="R">Resistencia (R)</option>
+            <option value="P">Potencia (P)</option>
+            <option value="Q">Calor (Q)</option>
+          </select>
+        </div>
+      </div>
+
+      <h2>Valores Constantes y Rango</h2>
+      <div id="constantInputs" class="input-group"></div>
+      <div class="input-group">
+        <div class="input-item">
+          <label for="startValue">Valor Inicial del Eje X:</label>
+          <div>
+            <input type="number" id="startValue" value="0" step="any" />
+            <select id="startUnit" class="unit-select"></select>
+          </div>
+        </div>
+        <div class="input-item">
+          <label for="endValue">Valor Final del Eje X:</label>
+          <div>
+            <input type="number" id="endValue" value="100" step="any" />
+            <select id="endUnit" class="unit-select"></select>
+          </div>
+        </div>
+        <div class="input-item">
+          <label for="numPoints">Número de Puntos:</label>
+          <input type="number" id="numPoints" value="10" min="10" max="1000" />
+        </div>
+      </div>
+
+      <button onclick="generateGraph()">Generar Gráfico</button>
+
+      <p id="error-message"></p>
+
+      <div id="chartContainer">
+        <canvas id="myChart"></canvas>
+      </div>
+    </div>
+
+    <script>
+      // Diccionario de unidades y sus multiplicadores
+      const units = {
+        V: {  V: 1, mV: 0.001, kV: 1000 },
+        I: {  A: 1, mA: 0.001, kA: 1000 },
+        R: {  Ω: 1, mΩ: 0.001, kΩ: 1000 },
+        P: {  W: 1, mW: 0.001, kW: 1000 },
+        Q: {  J: 1, mJ: 0.001, kJ: 1000, MJ: 1000000, cal: 4.184, kcal: 4184 }, // Joule y Calorías
+        t: {  s: 1, ms: 0.001, min: 60, hr: 3600 }, // Tiempo
+      };
+
+      // Función para obtener el multiplicador de una unidad
+      function getMultiplier(unitType, unitName) {
+        return units[unitType][unitName];
+      }
+
+      const xAxisSelect = document.getElementById("xAxis");
+      const yAxisSelect = document.getElementById("yAxis");
+      const constantInputsDiv = document.getElementById("constantInputs");
+      const startUnitSelect = document.getElementById("startUnit");
+      const endUnitSelect = document.getElementById("endUnit");
+      const errorMessage = document.getElementById("error-message");
+
+      let myChart; // Variable para almacenar la instancia del gráfico de Chart.js
+
+      // Función para actualizar las unidades de los selectores de rango
+      function updateRangeUnits() {
+        const xAxisType = xAxisSelect.value;
+        const xAxisUnits = units[xAxisType];
+
+        startUnitSelect.innerHTML = "";
+        endUnitSelect.innerHTML = "";
+
+        for (const unitKey in xAxisUnits) {
+          const option = document.createElement("option");
+          option.value = unitKey;
+          option.textContent = unitKey;
+          startUnitSelect.appendChild(option);
+
+          const option2 = document.createElement("option");
+          option2.value = unitKey;
+          option2.textContent = unitKey;
+          endUnitSelect.appendChild(option2);
+        }
+        // Seleccionar la unidad base por defecto si existe (V, A, Ohm, etc.)
+        if (xAxisUnits[xAxisType]) {
+          startUnitSelect.value = xAxisType;
+          endUnitSelect.value = xAxisType;
+        } else if (xAxisType === "t" && xAxisUnits["s"]) {
+          startUnitSelect.value = "s";
+          endUnitSelect.value = "s";
+        }
+      }
+
+      // Función para generar los campos de entrada para las variables constantes
+      function generateConstantInputs() {
+        constantInputsDiv.innerHTML = ""; // Limpiar campos existentes
+        errorMessage.textContent = ""; // Limpiar mensajes de error
+
+        const xAxisVar = xAxisSelect.value;
+        const yAxisVar = yAxisSelect.value;
+
+        // Las variables posibles son V, I, R, P, t, Q
+        const allVariables = ["V", "I", "R", "P", "t", "Q"];
+        const neededConstants = allVariables.filter(
+          (v) => v !== xAxisVar && v !== yAxisVar
+        );
+
+        // Reglas para determinar qué constantes son necesarias para un cálculo válido
+        const requiredConstantSets = {
+          // Para V, I, R: Necesitas 1 constante (si los ejes son 2 de V,I,R)
+          VI: ["R"],
+          VR: ["I"],
+          IR: ["V"],
+          // Para P: Necesitas V, I o I,R o V,R
+          VP: ["I"],
+          IP: ["R"],
+          RP: ["V"],
+          // Para Q: Necesitas P, t o I, R, t
+          tQ: ["P"], // Q = P*t
+          IQ: ["R", "t"],
+          RQ: ["I", "t"],
+          VQ: ["R", "t"], // Q = I^2*R*t o Q = V^2/R*t
+          // Si el eje Y es Q, y el eje X no es t, necesitamos t
+          Q: ["t"], // Para Q = f(V), Q = f(I), Q = f(R), Q = f(P) siempre necesitamos 't'
+        };
+
+        let constantsToRequest = [];
+
+        // Lógica para determinar las constantes necesarias
+        if (
+          ["V", "I", "R"].includes(xAxisVar) &&
+          ["V", "I", "R"].includes(yAxisVar)
+        ) {
+          if (xAxisVar !== yAxisVar) {
+            const thirdVar = allVariables.find(
+              (v) =>
+                ["V", "I", "R"].includes(v) && v !== xAxisVar && v !== yAxisVar
+            );
+            if (thirdVar) constantsToRequest.push(thirdVar);
+          }
+        } else if (xAxisVar === "t" && yAxisVar === "Q") {
+          constantsToRequest.push("P"); // Q = P*t
+          // Opcional: permitir I,R para Q = I^2*R*t
+          constantsToRequest.push("I", "R");
+        } else if (yAxisVar === "Q") {
+          // Si Q es el eje Y y t no es el eje X
+          // Para Q = I^2*R*t o Q = V^2/R*t
+          if (xAxisVar === "I") {
+            constantsToRequest.push("R", "t");
+          } else if (xAxisVar === "V") {
+            constantsToRequest.push("R", "t");
+          } else if (xAxisVar === "R") {
+            constantsS = ["I", "t"];
+            constantsToRequest.push("I", "t");
+          } else if (xAxisVar === "P") {
+            constantsToRequest.push("t");
+          } // Q = P*t
+          else {
+            // Si Q es el eje Y y el eje X es algo que no permite calcular P o I,R,t directamente
+            // Necesitamos V, I, R para calcular P y luego Q, o I, R y t
+            errorMessage.textContent =
+              "Para graficar Calor (Q), el Eje X debe ser Tiempo (t), o debe proporcionar V, I, R y T, o P y T.";
+            return; // No generar inputs si no se puede calcular
+          }
+        } else if (yAxisVar === "P") {
+          // Si P es el eje Y
+          if (xAxisVar === "V")
+            constantsToRequest.push("I", "R"); // P=VI=I^2R=V^2/R
+          else if (xAxisVar === "I") constantsToRequest.push("V", "R");
+          else if (xAxisVar === "R") constantsToRequest.push("V", "I");
+        } else if (yAxisVar === "V") {
+          if (xAxisVar === "I") constantsToRequest.push("R");
+          else if (xAxisVar === "R") constantsToRequest.push("I");
+          else if (xAxisVar === "P") constantsToRequest.push("I", "R"); // V=P/I o V=sqrt(PR)
+        } else if (yAxisVar === "I") {
+          if (xAxisVar === "V") constantsToRequest.push("R");
+          else if (xAxisVar === "R") constantsToRequest.push("V");
+          else if (xAxisVar === "P") constantsToRequest.push("V", "R"); // I=P/V o I=sqrt(P/R)
+        } else if (yAxisVar === "R") {
+          if (xAxisVar === "V") constantsToRequest.push("I");
+          else if (xAxisVar === "I") constantsToRequest.push("V");
+          else if (xAxisVar === "P") constantsToRequest.push("V", "I"); // R=V^2/P o R=P/I^2
+        }
+
+        // Eliminar duplicados si los hay y ordenar para consistencia
+        constantsToRequest = [...new Set(constantsToRequest)].sort();
+
+        constantsToRequest.forEach((constantVar) => {
+          const div = document.createElement("div");
+          div.className = "input-item";
+          div.innerHTML = `
+                    <label for="const_${constantVar}">Valor constante de ${getLabel(
+            constantVar
+          )}:</label>
+                    <div>
+                        <input type="number" id="const_${constantVar}" value="1" step="any">
+                        <select id="unit_const_${constantVar}" class="unit-select"></select>
+                    </div>
+                `;
+          constantInputsDiv.appendChild(div);
+
+          const unitSelect = div.querySelector(`#unit_const_${constantVar}`);
+          const varUnits = units[constantVar];
+          for (const unitKey in varUnits) {
+            const option = document.createElement("option");
+            option.value = unitKey;
+            option.textContent = unitKey;
+            unitSelect.appendChild(option);
+          }
+          // Seleccionar la unidad base por defecto
+          if (varUnits[constantVar]) {
+            unitSelect.value = constantVar;
+          } else if (constantVar === "t" && varUnits["s"]) {
+            unitSelect.value = "s";
+          } else if (constantVar === "Q" && varUnits["J"]) {
+            unitSelect.value = "J";
+          }
+        });
+
+        // Si no se necesitan constantes, o ya se validó que no hay error
+        if (constantsToRequest.length === 0 && !errorMessage.textContent) {
+          // A veces no se necesitan constantes extra, como si graficas P vs I y ya tienes V
+          // No mostrar mensaje de error si la combinación es directamente calculable
+        }
+      }
+
+      // Mapeo de variables a sus etiquetas legibles
+      function getLabel(variable) {
+        switch (variable) {
+          case "V":
+            return "Voltaje";
+          case "I":
+            return "Intensidad";
+          case "R":
+            return "Resistencia";
+          case "P":
+            return "Potencia";
+          case "Q":
+            return "Calor";
+          case "t":
+            return "Tiempo";
+          default:
+            return variable;
+        }
+      }
+
+      // Escucha cambios en los selectores de eje para actualizar las unidades y constantes
+      xAxisSelect.addEventListener("change", () => {
+        updateRangeUnits();
+        generateConstantInputs();
+      });
+      yAxisSelect.addEventListener("change", generateConstantInputs);
+
+      // Inicializar al cargar la página
+      document.addEventListener("DOMContentLoaded", () => {
+        updateRangeUnits();
+        generateConstantInputs();
+      });
+
+      // Función principal para generar el gráfico
+      function generateGraph() {
+        errorMessage.textContent = ""; // Limpiar errores anteriores
+
+        const xAxisVar = xAxisSelect.value;
+        const yAxisVar = yAxisSelect.value;
+
+        let startVal = parseFloat(document.getElementById("startValue").value);
+        let endVal = parseFloat(document.getElementById("endValue").value);
+        const numPoints = parseInt(document.getElementById("numPoints").value);
+
+        if (
+          isNaN(startVal) ||
+          isNaN(endVal) ||
+          isNaN(numPoints) ||
+          numPoints <= 0
+        ) {
+          errorMessage.textContent =
+            "Por favor, ingrese valores numéricos válidos para el rango y el número de puntos.";
+          return;
+        }
+        if (startVal >= endVal) {
+          errorMessage.textContent =
+            "El valor inicial debe ser menor que el valor final para el Eje X.";
+          return;
+        }
+
+        // Aplicar multiplicadores de unidad a los valores de rango
+        startVal *= getMultiplier(
+          xAxisVar,
+          document.getElementById("startUnit").value
+        );
+        endVal *= getMultiplier(
+          xAxisVar,
+          document.getElementById("endUnit").value
+        );
+
+        const data = [];
+        const labels = [];
+
+        // Obtener los valores constantes ingresados por el usuario
+        const constants = {};
+        const constantInputs = constantInputsDiv.querySelectorAll(
+          'input[type="number"]'
+        );
+        constantInputs.forEach((input) => {
+          const varName = input.id.replace("const_", "");
+          let value = parseFloat(input.value);
+          const unitSelectId = `unit_${input.id}`;
+          const unit = document.getElementById(unitSelectId).value;
+
+          if (isNaN(value)) {
+            errorMessage.textContent = `Por favor, ingrese un valor numérico para ${getLabel(
+              varName
+            )}.`;
+            return; // Detener la ejecución si hay un error
+          }
+          value *= getMultiplier(varName, unit);
+          constants[varName] = value;
+        });
+
+        if (errorMessage.textContent) return; // Si hubo un error en las constantes, detener
+
+        const step = (endVal - startVal) / (numPoints - 1);
+
+        for (let i = 0; i < numPoints; i++) {
+          const xVal = startVal + i * step;
+          labels.push(xVal.toFixed(2)); // Para las etiquetas del eje X
+
+          let yVal;
+          let V = constants["V"];
+          let I = constants["I"];
+          let R = constants["R"];
+          let P = constants["P"];
+          let t = constants["t"];
+
+          // Asignar el valor del eje X a la variable correspondiente
+          switch (xAxisVar) {
+            case "V":
+              V = xVal;
+              break;
+            case "I":
+              I = xVal;
+              break;
+            case "R":
+              R = xVal;
+              break;
+            case "P":
+              P = xVal;
+              break;
+            case "t":
+              t = xVal;
+              break;
+          }
+
+          try {
+            // Lógica de cálculo basada en los ejes y las constantes
+            if (yAxisVar === "V") {
+              if (xAxisVar === "I" && R !== undefined) yVal = I * R; //V = I * R
+              else if (xAxisVar === "R" && I !== undefined) yVal = I * R; // V = R * I
+              else if (xAxisVar === "P" && I !== undefined) yVal = P / I; // V = P / I
+              else if (xAxisVar === "P" && R !== undefined) yVal = Math.sqrt(P * R); // V = sqrt(PxR)
+              else {
+                throw new Error("Combinación de variables inválida para V.");
+              }
+            } else if (yAxisVar === "I") {
+              if (xAxisVar === "V" && R !== undefined) yVal = V / R;
+              else if (xAxisVar === "R" && V !== undefined) yVal = V / R;
+              else if (xAxisVar === "P" && V !== undefined) yVal = P / V;
+              else if (xAxisVar === "P" && R !== undefined)
+                yVal = Math.sqrt(P / R);
+              else {
+                throw new Error("Combinación de variables inválida para I.");
+              }
+            } else if (yAxisVar === "R") {
+              if (xAxisVar === "V" && I !== undefined) yVal = V / I;
+              else if (xAxisVar === "I" && V !== undefined) yVal = V / I;
+              else if (xAxisVar === "P" && I !== undefined) yVal = P / (I * I);
+              else if (xAxisVar === "P" && V !== undefined) yVal = (V * V) / P;
+              else {
+                throw new Error("Combinación de variables inválida para R.");
+              }
+            } else if (yAxisVar === "P") {
+              if (V !== undefined && I !== undefined) yVal = V * I;
+              else if (I !== undefined && R !== undefined) yVal = I * I * R;
+              else if (V !== undefined && R !== undefined) yVal = (V * V) / R;
+              else {
+                throw new Error("Combinación de variables inválida para P.");
+              }
+            } else if (yAxisVar === "Q") {
+              if (t === undefined)
+                throw new Error(
+                  "Tiempo (t) es requerido para calcular Calor (Q)."
+                );
+
+              // Intentar calcular P primero
+              let currentP;
+              if (P !== undefined) {
+                currentP = P;
+              } else if (V !== undefined && I !== undefined) {
+                currentP = V * I;
+              } else if (I !== undefined && R !== undefined) {
+                currentP = I * I * R;
+              } else if (V !== undefined && R !== undefined) {
+                currentP = (V * V) / R;
+              } else {
+                throw new Error(
+                  "Se necesitan V e I, o I y R, o V y R para calcular Potencia y luego Calor."
+                );
+              }
+              yVal = currentP * t;
+            }
+
+            if (isNaN(yVal) || !isFinite(yVal)) {
+              throw new Error(
+                "División por cero o resultado inválido (ej. raíz cuadrada de negativo)."
+              );
+            }
+            data.push(yVal);
+          } catch (e) {
+            errorMessage.textContent = `Error de cálculo: ${e.message} Por favor, verifique sus valores constantes.`;
+            // Llenar el resto de los datos con NaN para evitar errores en el gráfico
+            for (let j = i; j < numPoints; j++) data.push(NaN);
+            break;
+          }
+        }
+
+        if (myChart) {
+          myChart.destroy(); // Destruye el gráfico anterior si existe
+        }
+
+        const ctx = document.getElementById("myChart").getContext("2d");
+        myChart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: `${getLabel(yAxisVar)} vs. ${getLabel(xAxisVar)}`,
+                data: data,
+                borderColor: "rgb(75, 192, 192)",
+                tension: 0.1,
+                fill: false,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              title: {
+                display: true,
+                text: `Gráfico de ${getLabel(
+                  yAxisVar
+                )} en función de ${getLabel(xAxisVar)}`,
+              },
+            },
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: `${getLabel(xAxisVar)} (${xAxisSelect.value})`,
+                },
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: `${getLabel(yAxisVar)} (${yAxisSelect.value})`,
+                },
+                beginAtZero: true, // Puede ser útil para muchos gráficos de Ohm
+              },
+            },
+          },
+        });
+      }
+    </script>
+  </body>
+</html>

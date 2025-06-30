@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Simulador de Ley de Joule</title>
+    <style>
+      .barra {
+        width: 100%;
+        height: 20px;
+        background: linear-gradient(to right, red 0%, transparent 100%);
+        margin-bottom: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Simulador: Calor generado por corriente (Ley de Joule)</h2>
+    <label
+      >Voltaje (V): <input type="number" id="voltajeInput" value="10" /></label
+    ><br />
+    <label
+      >Tiempo (s): <input type="number" id="tiempoInput" value="5"
+    /></label>
+
+    <div id="resultados"></div>
+
+    <script>
+      function imprimirRangoConArray(inicio, fin) {
+        const multiplosDe10 = [];
+        for (let i = inicio; i <= fin; i++) {
+          if (i % 10 === 0) multiplosDe10.push(i);
+        }
+        return multiplosDe10;
+      }
+
+      const resistencias = imprimirRangoConArray(10, 100);
+      const resultadosDiv = document.getElementById("resultados");
+      const voltajeInput = document.getElementById("voltajeInput");
+      const tiempoInput = document.getElementById("tiempoInput");
+
+      function calcularYMostrar() {
+        const V = Number(voltajeInput.value);
+        const t = Number(tiempoInput.value);
+        resultadosDiv.innerHTML = "";
+
+        resistencias.forEach((R) => {
+          const I = V / R;
+          const Q = I * I * R * t;
+          const porcentaje = Math.min(Q / 100, 1) * 100; // para escala visual
+
+          const barra = document.createElement("div");
+          barra.className = "barra";
+          barra.style.background = `linear-gradient(to right, orange ${porcentaje}%, lightgray ${porcentaje}%)`;
+
+          const info = document.createElement("p");
+          info.innerText = `R = ${R}Ω → I = ${I.toFixed(2)}A → Q = ${Q.toFixed(
+            2
+          )} J`;
+
+          resultadosDiv.appendChild(info);
+          resultadosDiv.appendChild(barra);
+        });
+      }
+
+      voltajeInput.addEventListener("input", calcularYMostrar);
+      tiempoInput.addEventListener("input", calcularYMostrar);
+
+      calcularYMostrar(); // inicial
+    </script>
+  </body>
+</html>

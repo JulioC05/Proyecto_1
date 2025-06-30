@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Calculadora de Corriente Eléctrica</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap");
+      body {
+        margin: 0;
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
+        font-family: "Montserrat", sans-serif;
+        color: #ffffff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 2rem;
+        min-height: 100vh;
+      }
+      .header {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 2rem;
+      }
+      img.logo {
+        max-width: 100px;
+        margin-right: 1rem;
+        margin-top: -20px;
+      }
+      h1 {
+        font-weight: 700;
+        font-size: 2.5rem;
+        color: #ffcc00;
+        text-shadow: 0 0 10px rgba(255, 204, 0, 0.7);
+      }
+      p.description {
+        max-width: 600px;
+        font-size: 1.1rem;
+        color: #eaeaea;
+        text-align: center;
+      }
+      form {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 2rem 3rem;
+        border-radius: 15px;
+        max-width: 450px;
+        width: 100%;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        transition: transform 0.3s ease;
+      }
+      form:hover {
+        transform: scale(1.02);
+      }
+      label {
+        display: block;
+        margin-top: 1rem;
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: #ffcc00;
+      }
+      input[type="number"],
+      select {
+        width: 100%;
+        padding: 0.75rem;
+        border-radius: 8px;
+        border: none;
+        font-size: 1rem;
+        margin-top: 0.4rem;
+        box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
+        background-color: #ffffff;
+        color: #222;
+      }
+      input[type="number"]:focus,
+      select:focus {
+        outline: none;
+        box-shadow: 0 0 5px #ffcc00, inset 0 2px 6px rgba(0, 0, 0, 0.3);
+      }
+      button {
+        margin-top: 2rem;
+        width: 100%;
+        background: #ffcc00;
+        border: none;
+        padding: 0.75rem;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 1.3rem;
+        color: #222;
+        cursor: pointer;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        transition: background 0.3s ease, transform 0.2s ease;
+      }
+      button:hover {
+        background: #e6b800;
+        transform: translateY(-2px);
+      }
+      .result {
+        margin-top: 2rem;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #0b0b0b;
+        text-align: center;
+        min-height: 50px;
+        user-select: text;
+        padding: 1rem;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.2);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      }
+      canvas {
+        max-width: 600px;
+        margin-top: 2rem;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 1rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      }
+      footer {
+        margin-top: auto;
+        padding: 1.5rem 1rem;
+        color: #b7b7b7;
+        font-size: 0.9rem;
+        text-align: center;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <div class="header">
+      <img
+        src="https://upload.wikimedia.org/wikipedia/commons/0/0d/Autonoma_logov2.png"
+        alt="Logo de la Universidad"
+        class="logo"
+      />
+      <div>
+        <h1>Calculadora de Corriente Eléctrica</h1>
+        <p class="description">
+          Calcula la corriente eléctrica (I) usando la Ley de Ohm:<br />
+          <strong>I = V / R</strong><br />
+          Donde: I es corriente (amperios), V voltaje (voltios), R resistencia
+          (ohmios).
+        </p>
+      </div>
+    </div>
+
+    <form
+      id="corrienteForm"
+      aria-label="Formulario para calcular corriente eléctrica"
+    >
+      <label for="voltaje">Voltaje (V):</label>
+      <input
+        type="number"
+        id="voltaje"
+        step="any"
+        min="0"
+        required
+        placeholder="Ej: 12"
+      />
+      <select id="unidadVoltaje">
+        <option value="1">Voltios (V)</option>
+        <option value="0.001">Milivoltios (mV)</option>
+        <option value="1000">Kilovoltios (kV)</option>
+      </select>
+
+      <label for="resistencia">Resistencia (R):</label>
+      <input
+        type="number"
+        id="resistencia"
+        step="any"
+        min="0.0001"
+        required
+        placeholder="Ej: 100"
+      />
+      <select id="unidadResistencia">
+        <option value="1">Ohmios (Ω)</option>
+        <option value="1000">Kiloohmios (kΩ)</option>
+        <option value="0.001">Miliohmios (mΩ)</option>
+      </select>
+
+      <button type="submit">Calcular Corriente (I)</button>
+    </form>
+
+    <div id="resultado" class="result" aria-live="polite" role="region"></div>
+    <canvas id="graficaCorriente" width="400" height="250"></canvas>
+
+    <footer>
+      <small
+        >Aplicación para curso de Física 2 | Corriente Eléctrica - Ley de
+        Ohm</small
+      >
+    </footer>
+
+    <script>
+      let chart;
+
+      document.addEventListener("DOMContentLoaded", () => {
+        document
+          .getElementById("corrienteForm")
+          .addEventListener("submit", calcularCorriente);
+      });
+
+      function calcularCorriente(event) {
+        event.preventDefault();
+        const V =
+          parseFloat(document.getElementById("voltaje").value) *
+          parseFloat(document.getElementById("unidadVoltaje").value);
+        const R =
+          parseFloat(document.getElementById("resistencia").value) *
+          parseFloat(document.getElementById("unidadResistencia").value);
+
+        if (isNaN(V) || isNaN(R) || V < 0 || R <= 0) {
+          document.getElementById("resultado").innerHTML =
+            "Por favor ingresa valores válidos (V ≥ 0 y R > 0).";
+          return;
+        }
+
+        const I = V / R;
+        document.getElementById(
+          "resultado"
+        ).innerHTML = `La corriente eléctrica es: <strong>${I.toFixed(
+          6
+        )} A</strong>`;
+        graficarCorriente(V, R, I);
+      }
+
+      function graficarCorriente(V, R, I) {
+        const valoresX = [];
+        const valoresY = [];
+        for (let i = 0.1; i <= V * 2; i += V / 20) {
+          valoresX.push(i.toFixed(2));
+          valoresY.push((i / R).toFixed(6));
+        }
+
+        const ctx = document
+          .getElementById("graficaCorriente")
+          .getContext("2d");
+        if (chart) chart.destroy();
+
+        chart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: valoresX,
+            datasets: [
+              {
+                label: "Corriente (A) vs Voltaje (V)",
+                data: valoresY,
+                borderColor: "#ffcc00",
+                backgroundColor: "rgba(255, 204, 0, 0.2)",
+                fill: true,
+                tension: 0.2,
+                pointRadius: 2,
+                borderWidth: 3,
+              },
+              {
+                label: "Valor Calculado",
+                data: [{ x: V, y: I }],
+                type: "scatter",
+                backgroundColor: "#ff0000",
+                borderColor: "#ffffff",
+                borderWidth: 2,
+                pointRadius: 8,
+                pointHoverRadius: 12,
+              },
+              {
+                label: "Guía Vertical",
+                data: [
+                  { x: V, y: 0 },
+                  { x: V, y: I },
+                ],
+                type: "line",
+                borderColor: "rgba(255, 255, 255, 0.5)",
+                borderWidth: 1,
+                borderDash: [5, 5],
+                pointRadius: 0,
+                fill: false,
+              },
+              {
+                label: "Guía Horizontal",
+                data: [
+                  { x: 0, y: I },
+                  { x: V, y: I },
+                ],
+                type: "line",
+                borderColor: "rgba(255, 255, 255, 0.5)",
+                borderWidth: 1,
+                borderDash: [5, 5],
+                pointRadius: 0,
+                fill: false,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                labels: {
+                  color: "#fff",
+                  filter: (item) =>
+                    item.text !== "Guía Vertical" &&
+                    item.text !== "Guía Horizontal",
+                },
+              },
+              tooltip: {
+                callbacks: {
+                  label: (context) => {
+                    if (context.dataset.label === "Valor Calculado") {
+                      return `V = ${context.raw.x.toFixed(
+                        2
+                      )} V, I = ${context.raw.y.toFixed(6)} A`;
+                    }
+                    return `V = ${context.label} V, I = ${context.raw} A`;
+                  },
+                },
+              },
+            },
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: "Voltaje (V)",
+                  color: "#fff",
+                },
+                ticks: { color: "#fff" },
+                grid: { color: "rgba(255, 255, 255, 0.1)" },
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: "Corriente (A)",
+                  color: "#fff",
+                },
+                ticks: { color: "#fff" },
+                grid: { color: "rgba(255, 255, 255, 0.1)" },
+              },
+            },
+          },
+        });
+      }
+    </script>
+  </body>
+</html>
