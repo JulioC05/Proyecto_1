@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calculadora Ley de Ohm y Joule con Gráficos</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="./css/proyecto.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div style="display: flex">
+        <img
+          src="https://upload.wikimedia.org/wikipedia/commons/0/0d/Autonoma_logov2.png"
+          alt="Logo de la Universidad"
+          class="logo"
+        />
+        <h1>Calculadora Interactiva de Leyes de Ohm con Graficos</h1>
+      </div>
+
+      <div class="input-group">
+        <div class="input-item">
+          <label for="xAxis">Eje X (Variable Independiente):</label>
+          <select id="xAxis">
+            <option value="V">Voltaje (V)</option>
+            <option value="I">Intensidad (I)</option>
+            <option value="R">Resistencia (R)</option>
+            <option value="P">Potencia (P)</option>
+            <option value="t">Tiempo (t)</option>
+          </select>
+        </div>
+        <div class="input-item">
+          <label for="yAxis">Eje Y (Variable Dependiente):</label>
+          <select id="yAxis">
+            <option value="I">Intensidad (I)</option>
+            <option value="V">Voltaje (V)</option>
+            <option value="R">Resistencia (R)</option>
+            <option value="P">Potencia (P)</option>
+            <option value="Q">Calor (Q)</option>
+          </select>
+        </div>
+      </div>
+
+      <h2>Valores Constantes y Rango</h2>
+      <div
+        id="formula-choice-container"
+        style="text-align: center; margin-top: 10px"
+      ></div>
+      <div id="octultar-select" style="text-align: center; margin-bottom: 10px">
+        <div style="text-align: center">
+          <button
+            onclick="clearFormulaChoice()"
+            style="
+              margin-top: 5px;
+              padding: 6px 12px;
+              font-size: 0.9em;
+              width: 40%;
+              margin: 0 auto;
+            "
+          >
+            Ocultar selector de fórmula
+          </button>
+        </div>
+      </div>
+      <div id="constantInputs" class="input-group"></div>
+      <div class="input-group">
+        <div class="input-item">
+          <label for="startValue">Valor Inicial del Eje X:</label>
+          <div>
+            <input type="number" id="startValue" value="0" step="any" />
+            <select id="startUnit" class="unit-select"></select>
+          </div>
+        </div>
+        <div class="input-item">
+          <label for="endValue">Valor Final del Eje X:</label>
+          <div>
+            <input type="number" id="endValue" value="100" step="any" />
+            <select id="endUnit" class="unit-select"></select>
+          </div>
+        </div>
+        <div class="input-item">
+          <label for="numPoints">Número de Puntos:</label>
+          <input type="number" id="numPoints" value="10" min="10" max="1000" />
+        </div>
+      </div>
+
+      <button onclick="generateGraph()">Generar Gráfico</button>
+
+      <p id="error-message"></p>
+      <p id="formula-display"></p>
+
+      <div id="chartContainer">
+        <canvas id="myChart"></canvas>
+      </div>
+    </div>
+
+    <script src="./js/proyecto.js"></script>
+  </body>
+</html>
